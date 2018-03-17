@@ -17,7 +17,7 @@ class App < AVS::OnDeviceWake
   def record time: 5
     `paplay /usr/share/sounds/purple/alert.wav`
    
-    `rec -d -c 1 -r 16000 -e signed -b 16 ./input.wav trim 0 #{time}`
+    #`rec -d -c 1 -r 16000 -e signed -b 16 ./input.wav trim 0 #{time}`
    
     Thread.new do
       `paplay /usr/share/sounds/purple/alert.wav`

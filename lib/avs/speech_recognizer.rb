@@ -42,9 +42,9 @@ module AVS
       end
        
       #result = open('result').read
-      result = post input, version: version 
+      result = post(input, version: version )
       
-      if result.scrub =~ /Content-Type: application\/json\r\n\r\n(.*)\r\n/
+      if result =~ /Content-Type: application\/json\r\n\r\n(.*)\r\n/
         begin
           obj = JSON.parse($1)
         rescue

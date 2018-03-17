@@ -8,13 +8,15 @@ require 'avs/speech_synthesizer'
 
 module AVS
   class AppV1
-    attr_reader :client_id, :client_secret, :refresh_token, :speech_recognizer
+    attr_reader :client_id, :client_secret, :refresh_token, :speech_recognizer, :speaker, :speech_synthesizer
     def initialize client_id: nil, client_secret: nil, refresh_token: nil
       @client_id     = client_id
       @client_secret = client_secret
       @refresh_token = refresh_token
       
-      @speech_recognizer = AVS::SpeechRecognizer.new(token)
+      @speech_recognizer  = AVS::SpeechRecognizer.new(token)
+      @speech_synthesizer = AVS::SpeechSynthesizer.new
+      @speaker            = AVS::Speaker.new            
     end
   
     def token
@@ -41,7 +43,7 @@ module AVS
     end
     
     def speak file: nil, data: nil
-      SpeechSynthesizer.speak(data ? data : open(file).read)
+      speech_synthesizer.speak(data ? data : open(file).read)
     end
   end
   

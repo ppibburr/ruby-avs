@@ -19,9 +19,7 @@ module AVS
          "#{f} "+
         "'#{url}'"
         
-        puts cmd   
-      
-        `#{cmd}`
+        IO.popen(cmd, "rb+").read
       end
       
       def self.post url, files: {}, headers: {}

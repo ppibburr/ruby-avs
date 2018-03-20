@@ -1,9 +1,14 @@
 module AVS
   class SpeechSynthesizer
-    def speak result
-      IO.popen('bash -c "mpg321 -"', 'r+') do |io|
-        io.puts result
-      end #if false 
+    def speak directive, content
+      data = content[id=directive['payload']['audioContent'].gsub('cid:', '')]
+      
+      _perform_speak data
+    end
+
+    private    
+    def _perform_speak data
+    
     end
   end
 end

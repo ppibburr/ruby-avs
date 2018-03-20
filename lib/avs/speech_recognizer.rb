@@ -35,8 +35,27 @@ module AVS
     def initialize token
       @token = token
     end
+    
+    def listen directive={'payload'=>{}}, content={}
+      t=Thread.new do
+        recognize _perform_listen
+      end
+      
+      if timeout=directive['payload']['timeoutIntervalInMillis']
+        Thread.new do
+          sleep(timeout.to_i/1000.0)
+          t.kill
+          
+          listen_timeout_request
+        end
+      end
 
-    def recognize input, version: 1
+      t.value
+    end
+    
+    def listen_timeout_request; end
+
+    def recognize input='./input.wav', version: 1
       File.open('./recognize_request.json', 'w') do |f|
         f.puts(API[version][:request].to_json)
       end
@@ -44,15 +63,37 @@ module AVS
       #result = open('result').read
       result = post(input, version: version )
       
-      if result =~ /Content-Type: application\/json\r\n\r\n(.*)\r\n/
-        begin
-          obj = JSON.parse($1)
-        rescue
-        end
-      end      
+      result =~ /boundary\=(.*?)(\;|\r\n)/
+      boundary = $1
       
-      [obj, result]     
+      parts = result.split("--#{boundary}")
+      parts.pop
+      parts.shift
+     
+      obj     = {}
+      content = {}
+      
+      parts.map do |p|
+        if p =~ /Content-Type: application\/json\r\n\r\n(.*)\r\n/
+          begin
+            obj = JSON.parse($1)
+          rescue
+          end
+        else
+          p = p.strip
+          if p =~ /Content-ID: \<(.*)\>\r\n/
+            key = $1
+            p = p.split(/\r\n\r\n/).last
+            content[key] = p
+          end
+        end      
+      end
+      
+      [obj, content]     
     end
+    
+    private
+    def _perform_listen; end
     
     private
     def post input, version: 1

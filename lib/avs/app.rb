@@ -31,37 +31,66 @@ module AVS
       JSON.parse(`#{cmd}`)['access_token']
     end
     
-    def directive obj, data
-      ((obj['messageBody'] ||= {})['directives'] ||= []).each do |d|
-        p d
+    def directive obj, content
+      if true
+        File.open("./log.json", "w") do |f| f.puts obj.to_json end
+        
+        i=0
+        content.each_pair do |k,v|
+          File.open("./content_#{i+=1}.part", "w") do |f|
+            f.puts v
+          end
+        end
       end
-      speak data: data
+    
+      ((obj['messageBody'] ||= {})['directives'] ||= []).each do |d|
+        p d if true
+      
+        if AVS.const_defined?((namespace=d['namespace']).to_sym)
+          if respond_to?(target=namespace.gsub(/([a-z])([A-Z])/) do |*o| "#{$1}_#{$2}" end.downcase.to_sym)
+            if response=send(target).send(d['name'].gsub(/([a-z])([A-Z])/) do |*o| "#{$1}_#{$2}" end.downcase.to_sym, d, content)
+              directive *response if response.is_a?(Array) and response[0].is_a?(Hash) and response[0]['messageBody']
+            end
+          else
+            AVS.log "Unimplemented method: #{d['name']}"
+          end
+        else
+          AVS.log "Unsupported Namespace: #{namespace}" 
+        end
+      end
     end
     
-    def listen voice_file = './input.wav'
-      speech_recognizer.recognize(voice_file)     
+    def set_listener &b
+      speech_recognizer.singleton_class.class_eval do
+        define_method :_perform_listen, &b
+      end
     end
     
-    def speak file: nil, data: nil
-      speech_synthesizer.speak(data ? data : open(file).read)
+    def set_speak &b
+      speech_synthesizer.singleton_class.class_eval do
+        define_method :_perform_speak, &b
+      end    
+    end
+    
+    def run
+      while true
+        directive *speech_recognizer.listen
+      end
     end
   end
   
   class OnDeviceWake < AppV1
     Thread.abort_on_exception = true
-    def run
-      Thread.new do
-        loop do
-          until @wake; end
-          
-          @wake = false
-          
-          directive *listen
-        end
+    
+    def set_listener &b
+      super do
+        until @wake; end
+        b.call
+        @wake = false
       end
     end
     
-    def wake;
+    def wake
       @wake = true
     end
   end

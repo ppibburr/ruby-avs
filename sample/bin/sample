@@ -1,47 +1,10 @@
 #!/usr/bin/env ruby
 
-$: << File.join(File.dirname(__FILE__), "..", '..', "lib")
+$: << File.join(File.dirname(__FILE__), "..", '..', 'ruby-avs',  "lib")
+$: << File.join(File.dirname(__FILE__), "..", "lib")
 
 require 'avs'
-
-class App < AVS::OnDeviceWake
-  def intitialize *o
-    super
-    
-    set_listener do |time=5|
-      `paplay /usr/share/sounds/purple/alert.wav`
-   
-      `rec -d -c 1 -r 16000 -e signed -b 16 #{f='./input.wav'} trim 0 #{time}`
-   
-      Thread.new do
-        `paplay /usr/share/sounds/purple/alert.wav`
-      end
-      
-      f
-    end
-  end
-end
-
-class Text2Alexa < AVS::AppV1
-  def initialize *o
-    super
-    
-    set_listener do
-      `paplay /usr/share/sounds/purple/alert.wav`
-      t=gets.chomp
-      puts `#{ENV['HOME']}/mycroft-core/mimic/mimic -t "#{t}" -voice slt -o #{f='./input.wav'}`
-      Thread.new do; `paplay /usr/share/sounds/purple/alert.wav`; end
-      f
-    end
-    
-    set_speak do |data|
-      p :speak
-      IO.popen('bash -c "mpg321 -"', 'r+') do |io|
-        io.puts data
-      end    
-    end
-  end
-end
+require 'sample/app'
 
 conf = JSON.parse(open('./conf.json').read)
 
@@ -59,8 +22,8 @@ unless rt=conf['refresh_token'] and rt != ''
   end
 end
 
-app = Text2Alexa.new(client_id: conf['client_id'], client_secret: conf['client_secret'], refresh_token: conf['refresh_token'])
-
-app.run
+app = SampleApp.new(client_id:     conf['client_id'],
+                    client_secret: conf['client_secret'], 
+                    refresh_token: conf['refresh_token']).run
 
 

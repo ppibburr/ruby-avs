@@ -72,6 +72,7 @@ module AVS
      
       obj     = {}
       content = {}
+
       
       parts.map do |p|
         if p =~ /Content-Type: application\/json\r\n\r\n(.*)\r\n/

@@ -82,16 +82,12 @@ module AVS
   class OnDeviceWake < AppV1
     Thread.abort_on_exception = true
     
-    def set_listener &b
-      super do
-        until @wake; end
-        b.call
-        @wake = false
-      end
+    def wake
+      directive *speech_recognizer.listen
     end
     
-    def wake
-      @wake = true
+    def run
+      while true; Thread.pass; end
     end
   end
 end

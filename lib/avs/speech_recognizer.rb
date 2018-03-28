@@ -37,13 +37,19 @@ module AVS
     end
     
     def listen directive={'payload'=>{}}, content={}
+      @go=false
       t=Thread.new do
-        recognize _perform_listen
+        r=recognize _perform_listen
+        @go=true
+        r
       end
-      
+
       if timeout=directive['payload']['timeoutIntervalInMillis']
         Thread.new do
           sleep(timeout.to_i/1000.0)
+          
+          next unless @go
+          
           t.kill
           
           listen_timeout_request

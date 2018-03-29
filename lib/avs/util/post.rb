@@ -19,6 +19,8 @@ module AVS
          "#{f} "+
         "'#{url}'"
         
+        # puts cmd if true
+        
         IO.popen(cmd, "rb+").read
       end
       

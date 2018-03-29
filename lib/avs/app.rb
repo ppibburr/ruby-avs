@@ -17,6 +17,13 @@ module AVS
       @speech_recognizer  = AVS::SpeechRecognizer.new(token)
       @speech_synthesizer = AVS::SpeechSynthesizer.new
       @speaker            = AVS::Speaker.new            
+    
+      this = self
+    
+      set_mute do |mute|
+        this.mute   if mute
+        this.unmute if !mute
+      end
     end
   
     def token
@@ -66,6 +73,12 @@ module AVS
       end
     end
     
+    def set_mute &b
+      speaker.singleton_class.class_eval do
+        define_method :_mute, &b
+      end
+    end
+    
     def set_speak &b
       speech_synthesizer.singleton_class.class_eval do
         define_method :_perform_speak, &b
@@ -77,6 +90,10 @@ module AVS
         directive *speech_recognizer.listen
       end
     end
+    
+    def mute;   end
+    
+    def unmute; end    
   end
   
   class OnDeviceWake < AppV1
@@ -87,7 +104,33 @@ module AVS
     end
     
     def run
-      while true; Thread.pass; end
+      while true
+        text = STDIN.gets
+        tts(text)
+      end
     end
+  
+    def wake input: false
+      unless input
+        mute
+        
+        input = speech_recognizer.send :_perform_listen
+        
+        unmute
+      end
+      
+      unless custom_voice_service
+        directive *speech_recognizer.recognize(input)
+      end
+    end
+
+    # Override to implement tts. super(audio_file: "/path/to/file")
+    def tts text=nil, audio_file: nil
+      raise "NotImplemented" if text
+      
+      wake input: audio_file if audio_file
+    end
+    
+    def custom_voice_service; end
   end
 end

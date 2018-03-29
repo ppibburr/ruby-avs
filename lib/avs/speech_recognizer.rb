@@ -68,7 +68,7 @@ module AVS
        
       #result = open('result').read
       result = post(input, version: version )
-      
+      p result if true
       result =~ /boundary\=(.*?)(\;|\r\n)/
       boundary = $1
       

@@ -19,9 +19,8 @@ module AVS
          "#{f} "+
         "'#{url}'"
         
-        # puts cmd if true
-        
-        IO.popen(cmd, "rb+").read
+        AVS::Util.log :POST, "AVS::Util::Post#send"
+        AVS::Util.shell cmd
       end
       
       def self.post url, files: {}, headers: {}

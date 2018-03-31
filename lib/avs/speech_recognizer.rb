@@ -37,6 +37,8 @@ module AVS
     end
     
     def listen directive={'payload'=>{}}, content={}
+      AVS::Util.log :LISTEN, "#{self}"
+    
       @go=false
       t=Thread.new do
         r=recognize _perform_listen

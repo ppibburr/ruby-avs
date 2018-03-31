@@ -5,6 +5,7 @@ require 'json'
 require 'avs/speaker'
 require 'avs/speech_recognizer'
 require 'avs/speech_synthesizer'
+require 'avs/util/stt'
 
 module AVS
   class AppV1
@@ -32,10 +33,9 @@ module AVS
       payload = {"client_id": client_id, "client_secret": client_secret, "refresh_token": refresh_token, "grant_type": "refresh_token", }
       url = "https://api.amazon.com/auth/o2/token"
 
-      cmd="curl -o - -X POST -H 'Content-Type: application/json' -d '#{payload.to_json}' #{url}"
-      puts cmd if false
-   
-      JSON.parse(`#{cmd}`)['access_token']
+      res = AVS::Util.shell "curl -o - -X POST -H 'Content-Type: application/json' -d '#{payload.to_json}' #{url}", json: true
+      
+      res['access_token'] if res
     end
     
     def directive obj, content
@@ -51,7 +51,7 @@ module AVS
       end
     
       ((obj['messageBody'] ||= {})['directives'] ||= []).each do |d|
-        p d if true
+        Util.log :DIRECTIVE, d.to_json, true
       
         if AVS.const_defined?((namespace=d['namespace']).to_sym)
           if respond_to?(target=namespace.gsub(/([a-z])([A-Z])/) do |*o| "#{$1}_#{$2}" end.downcase.to_sym)
@@ -59,17 +59,23 @@ module AVS
               directive *response if response.is_a?(Array) and response[0].is_a?(Hash) and response[0]['messageBody']
             end
           else
-            AVS.log "Unimplemented method: #{d['name']}"
+            raise "Unimplemented method: #{d['name']}"
           end
         else
-          AVS.log "Unsupported Namespace: #{namespace}" 
+          raise "Unsupported Namespace: #{namespace}" 
         end
       end
     end
     
     def set_listener &b
+      this = self
       speech_recognizer.singleton_class.class_eval do
-        define_method :_perform_listen, &b
+        define_method :_perform_listen do |*o|
+          this.mute
+          r=b.call *o
+          this.unmute
+          r
+        end
       end
     end
     
@@ -94,6 +100,9 @@ module AVS
     def mute;   end
     
     def unmute; end    
+    
+    def alert;  end
+    def alert1; end
   end
   
   class OnDeviceWake < AppV1
@@ -112,11 +121,11 @@ module AVS
   
     def wake input: false
       unless input
-        mute
+        alert
         
         input = speech_recognizer.send :_perform_listen
         
-        unmute
+        alert1
       end
       
       unless custom_voice_service
@@ -132,5 +141,11 @@ module AVS
     end
     
     def custom_voice_service; end
+    
+    def stt path: "./input.wav", io: nil
+      @stt ||= Util::STT.new
+      
+      @stt.recognize path: path, io: io 
+    end
   end
 end

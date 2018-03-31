@@ -30,7 +30,7 @@ module AVS
     
     def self.log realm, str, bool=true
       str.split("\n").each do |l|
-        puts "#{realm}: #{l}"
+        puts "[Util.log (#{realm}:)] #{l}"
       end if bool
     end
   end
